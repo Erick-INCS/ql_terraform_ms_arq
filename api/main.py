@@ -13,6 +13,10 @@ DATE_REGX = gen(r'^\d{4}-\d{2}-\d{2}')
 def read_root():
     return {"API tipo de cambio, favor de indicar una fecha"}
 
+@app.get("/healthcheck")
+def healthcheck():
+    return ":)"
+
 
 @app.get("/{date}")
 def read_item(date: str):

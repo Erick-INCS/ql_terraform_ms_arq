@@ -1,9 +1,9 @@
-output "fgms_dns_discovery_id" {
-  description = "fgms service discovery id"
-  value       = aws_service_discovery_private_dns_namespace.fgms_dns_discovery.id
+output "msif_dns_discovery_id" {
+  description = "MS IF service discovery id"
+  value       = aws_service_discovery_private_dns_namespace.msif_dns_discovery.id
 }
 
-output "fgms_private_dns_namespace" {
-  description = "fgms service discovery id"
-  value       = var.fgms_private_dns_namespace
+output "msif_private_dns_namespace" {
+  description = "Service discovery id"
+  value       = aws_service_discovery_private_dns_namespace.msif_dns_discovery.name
 }

@@ -13,26 +13,31 @@ terraform {
   }
 }
 
-
 provider "aws" {
-  region  = "us-east-1"
-  profile = "terraform"
+  region  = var.region
+  profile = var.aws_profile
 }
 
-
+locals {
+  env = terraform.workspace
+}
 
 data "terraform_remote_state" "vpc" {
   backend = "s3"
+  workspace = terraform.workspace
   config = {
-    bucket = "epaa-terraform-state"
-    key    = "backend.tfstate"
-    region = "us-east-1"
+    bucket = var.tfstate_bucket
+    key    = var.vpc_state_key
+    region = var.region
   }
 }
 
-
-resource "aws_service_discovery_private_dns_namespace" "fgms_dns_discovery" {
-  name        = var.fgms_private_dns_namespace
-  description = "fgms dns discovery"
-  vpc         = data.terraform_remote_state.vpc.outputs.fgms_vpc_id
+resource "aws_service_discovery_private_dns_namespace" "msif_dns_discovery" {
+  name        = "msif-net-ns.${local.env}"
+  description = "Microservice Infrastructre DNS Discovery"
+  vpc         = data.terraform_remote_state.vpc.outputs.msif_vpc_id
+  tags = {
+    enviroment = local.env
+    project = "msif"
+  }
 }

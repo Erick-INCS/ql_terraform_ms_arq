@@ -18,6 +18,11 @@ provider "aws" {
   profile = var.aws_profile
 }
 
-resource "aws_ecr_repository" "fgms-dev" {
-  name = "fgms-dev"
+# locals {
+#   env = terraform.workspace
+# }
+
+# Same repo for all enviroments (we can deploy a different tag)
+resource "aws_ecr_repository" "msif-api-ecr-repo" {
+  name = "msif-api"
 }

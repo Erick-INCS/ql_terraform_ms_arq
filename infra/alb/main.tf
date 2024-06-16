@@ -33,7 +33,7 @@ data "terraform_remote_state" "vpc" {
 resource "aws_lb" "fgms_alb" {
   load_balancer_type = "application"
   subnets            = data.terraform_remote_state.vpc.outputs.fgms_public_subnets_ids
-  security_groups    = ["${aws_security_group.fgms_alb_sg.id}"]
+  security_groups    = [aws_security_group.fgms_alb_sg.id]
 }
 
 resource "aws_security_group" "fgms_alb_sg" {

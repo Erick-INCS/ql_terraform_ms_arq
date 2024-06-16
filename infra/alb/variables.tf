@@ -15,9 +15,10 @@ variable "tfstate_bucket" {
   type        = string
   default     =  "epaa-terraform-state"
 }
+
 variable "vpc_state_key" {
   description = "key_of_terraform_vpc_state"
   type        = string
-  default     =  "backend.tfstate"
+  default     =  "vpc.tfstate"
 }
 

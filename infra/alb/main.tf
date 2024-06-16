@@ -13,15 +13,18 @@ terraform {
   }
 }
 
-
 provider "aws" {
   region  = var.region
   profile = var.aws_profile
 }
 
+locals {
+  env = terraform.workspace
+}
 
 data "terraform_remote_state" "vpc" {
   backend = "s3"
+  workspace = terraform.workspace
   config = {
     bucket = var.tfstate_bucket
     key    = var.vpc_state_key
@@ -29,16 +32,9 @@ data "terraform_remote_state" "vpc" {
   }
 }
 
-
-resource "aws_lb" "fgms_alb" {
-  load_balancer_type = "application"
-  subnets            = data.terraform_remote_state.vpc.outputs.fgms_public_subnets_ids
-  security_groups    = [aws_security_group.fgms_alb_sg.id]
-}
-
-resource "aws_security_group" "fgms_alb_sg" {
+resource "aws_security_group" "msif_alb_sg" {
   description = "controls access to the ALB"
-  vpc_id      = data.terraform_remote_state.vpc.outputs.fgms_vpc_id
+  vpc_id      = data.terraform_remote_state.vpc.outputs.msif_vpc_id
 
   ingress {
     protocol    = "tcp"
@@ -59,5 +55,20 @@ resource "aws_security_group" "fgms_alb_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    enviroment = local.env
+    project = "msif"
+  }
+}
+
+resource "aws_lb" "msif_alb" {
+  load_balancer_type = "application"
+  subnets            = data.terraform_remote_state.vpc.outputs.msif_public_subnets_ids
+  security_groups    = [aws_security_group.msif_alb_sg.id]
+  tags = {
+    enviroment = local.env
+    project = "msif"
   }
 }

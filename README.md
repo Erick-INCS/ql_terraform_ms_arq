@@ -46,4 +46,10 @@ Terraform code to generate all the resources necessary to build the microservice
 
 ## Sample of the final result
 Once all the components have been generated, it is only necessary to enter the _load balancer_ and use the _dns name_ as the url of the API.
+
 ![API Response Sample](img/API_GET_REQ.png)
+
+The API only allows getting *get requests* in the following way:
+`http://< url >/yyyy-mm-dd`
+
+The answer is the different values ​​of the USD dollar in Mexican pesos during each day of the month consulted, from the first day of the month until the day consulted.

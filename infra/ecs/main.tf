@@ -13,13 +13,19 @@ terraform {
   }
 }
 
-
 provider "aws" {
   region  = var.region
   profile = var.aws_profile
 }
 
+locals {
+  env = terraform.workspace
+}
 
-resource "aws_ecs_cluster" "fgms_ecs_cluster" {
-  name = "fgms_ecs_cluster"
+resource "aws_ecs_cluster" "msif_ecs_cluster" {
+  name = "msif_ecs_cluster_${local.env}"
+  tags = {
+    environment = local.env
+    project = "msif"
+  }
 }

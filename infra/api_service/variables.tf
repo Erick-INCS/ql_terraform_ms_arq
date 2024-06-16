@@ -1,7 +1,7 @@
-variable "fgms_api_service_namespace" {
-  description = "fgms api service namespace"
+variable "msif_api_service_namespace" {
+  description = "Api service namespace"
   type        = string
-  default     = "fgms-api-service"
+  default     = "msif-api-service"
 }
 
 variable "region" {
@@ -25,7 +25,7 @@ variable "tfstate_bucket" {
 variable "vpc_state_key" {
   description = "key_of_terraform_vpc_state"
   type        = string
-  default     =  "backend.tfstate"
+  default     =  "vpc.tfstate"
 }
 
 
@@ -38,7 +38,7 @@ variable "dns_state_key" {
 variable "api_image" {
   description = "api ecr image name"
   type        = string
-  default     =  "905418432534.dkr.ecr.us-east-1.amazonaws.com/fgms-dev"
+  default     =  "905418432534.dkr.ecr.us-east-1.amazonaws.com/msif-api"
 }
 
 variable "banxico_token" {

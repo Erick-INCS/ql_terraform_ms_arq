@@ -18,8 +18,13 @@ provider "aws" {
   profile = var.aws_profile
 }
 
+locals {
+  env = terraform.workspace
+}
+
 data "terraform_remote_state" "vpc" {
   backend = "s3"
+  workspace = terraform.workspace
   config = {
     bucket = var.tfstate_bucket
     key    = var.vpc_state_key
@@ -29,6 +34,7 @@ data "terraform_remote_state" "vpc" {
 
 data "terraform_remote_state" "dns" {
   backend = "s3"
+  workspace = terraform.workspace
   config = {
     bucket = var.tfstate_bucket
     key    = var.dns_state_key
@@ -38,6 +44,7 @@ data "terraform_remote_state" "dns" {
 
 data "terraform_remote_state" "alb" {
   backend = "s3"
+  workspace = terraform.workspace
   config = {
     bucket = var.tfstate_bucket
     key    = "alb.tfstate"
@@ -47,6 +54,7 @@ data "terraform_remote_state" "alb" {
 
 data "terraform_remote_state" "ecs_cluster" {
   backend = "s3"
+  workspace = terraform.workspace
   config = {
     bucket = var.tfstate_bucket
     key    = "ecs.tfstate"
@@ -54,9 +62,9 @@ data "terraform_remote_state" "ecs_cluster" {
   }
 }
 
-resource "aws_iam_policy" "fgms_api_task_role_policy" {
-  name        = "fgms_api_task_role_policy"
-  description = "fgms api task role policy"
+resource "aws_iam_policy" "msif_api_task_role_policy" {
+  name        = "msif_api_task_role_policy"
+  description = "msif api task role policy"
 
   policy = jsonencode(
     {
@@ -79,9 +87,8 @@ resource "aws_iam_policy" "fgms_api_task_role_policy" {
   )
 }
 
-
-resource "aws_iam_role" "fgms_api_task_role" {
-  name = "fgms_api_task_role"
+resource "aws_iam_role" "msif_api_task_role" {
+  name = "msif_api_${local.env}_task_role"
 
   assume_role_policy = jsonencode(
     {
@@ -102,22 +109,22 @@ resource "aws_iam_role" "fgms_api_task_role" {
 }
 
 resource "aws_iam_role_policy_attachment" "test-attach" {
-  role       = aws_iam_role.fgms_api_task_role.name
-  policy_arn = aws_iam_policy.fgms_api_task_role_policy.arn
+  role       = aws_iam_role.msif_api_task_role.name
+  policy_arn = aws_iam_policy.msif_api_task_role_policy.arn
 }
 
-resource "aws_cloudwatch_log_group" "fgms_log_group" {
-  name = "/ecs/fgms_log_group"
+resource "aws_cloudwatch_log_group" "msif_log_group" {
+  name = "/ecs/msif_${local.env}_log_group"
 
 }
 
-resource "aws_ecs_task_definition" "fgms_api_td" {
-  family                   = "fgms_api_td"
+resource "aws_ecs_task_definition" "msif_api_td" {
+  family                   = "msif_api_${local.env}_td"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.fgms_api_task_role.arn
+  execution_role_arn       = aws_iam_role.msif_api_task_role.arn
 
   container_definitions = jsonencode(
     [
@@ -125,7 +132,7 @@ resource "aws_ecs_task_definition" "fgms_api_td" {
         cpu : 256,
         image : var.api_image,
         memory : 512,
-        name : "fgms-api",
+        name : "msif-api",
         networkMode : "awsvpc",
         environment : [
           {
@@ -142,7 +149,7 @@ resource "aws_ecs_task_definition" "fgms_api_td" {
         logConfiguration : {
           logDriver : "awslogs",
           options : {
-            awslogs-group : "/ecs/fgms_log_group",
+            awslogs-group : "/ecs/msif_${local.env}_log_group",
             awslogs-region : var.region,
             awslogs-stream-prefix : "api"
           }
@@ -152,39 +159,39 @@ resource "aws_ecs_task_definition" "fgms_api_td" {
   )
 }
 
-resource "aws_ecs_service" "fgms_api_td_service" {
-  name            = "fgms_api_td_service"
-  cluster         = data.terraform_remote_state.ecs_cluster.outputs.fgms_ecs_cluster_id
-  task_definition = aws_ecs_task_definition.fgms_api_td.arn
+resource "aws_ecs_service" "msif_api_td_service" {
+  name            = "msif_api_${local.env}_td_service"
+  cluster         = data.terraform_remote_state.ecs_cluster.outputs.msif_ecs_cluster_id
+  task_definition = aws_ecs_task_definition.msif_api_td.arn
   desired_count   = "1"
   launch_type     = "FARGATE"
 
   network_configuration {
     security_groups = [aws_security_group.ecs_tasks_sg.id]
-    subnets         = [data.terraform_remote_state.vpc.outputs.fgms_private_subnets_ids[0]]
+    subnets         = [data.terraform_remote_state.vpc.outputs.msif_private_subnets_ids[0]]
   }
 
   load_balancer {
-    target_group_arn = aws_alb_target_group.fgms_api_tg.id
-    container_name   = "fgms-api"
+    target_group_arn = aws_alb_target_group.msif_api_tg.id
+    container_name   = "msif-api"
     container_port   = var.app_port
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.fgms_api_service.arn
+    registry_arn = aws_service_discovery_service.msif_api_service.arn
   }
 }
 
 resource "aws_security_group" "ecs_tasks_sg" {
-  name        = "ecs_tasks_sg"
+  name        = "ecs_tasks_sg_${local.env}"
   description = "allow inbound access from the ALB only"
-  vpc_id      = data.terraform_remote_state.vpc.outputs.fgms_vpc_id
+  vpc_id      = data.terraform_remote_state.vpc.outputs.msif_vpc_id
 
   ingress {
     protocol        = "tcp"
     from_port       = var.app_port
     to_port         = var.app_port
-    security_groups = [data.terraform_remote_state.alb.outputs.fgms_alb_sg_id]
+    security_groups = [data.terraform_remote_state.alb.outputs.msif_alb_sg_id]
   }
 
   ingress {
@@ -203,34 +210,34 @@ resource "aws_security_group" "ecs_tasks_sg" {
 }
 
 
-resource "aws_alb_target_group" "fgms_api_tg" {
-  name        = "fgms-api-tg"
+resource "aws_alb_target_group" "msif_api_tg" {
+  name        = "msif-api-tg-${local.env}"
   port        = var.app_port
   protocol    = "HTTP"
-  vpc_id      = data.terraform_remote_state.vpc.outputs.fgms_vpc_id
+  vpc_id      = data.terraform_remote_state.vpc.outputs.msif_vpc_id
   target_type = "ip"
   health_check {
     path = "/healthcheck"
   }
 }
 
-resource "aws_alb_listener" "fgms_api_tg_listener" {
-  load_balancer_arn = data.terraform_remote_state.alb.outputs.fgms_alb_id
+resource "aws_alb_listener" "msif_api_tg_listener" {
+  load_balancer_arn = data.terraform_remote_state.alb.outputs.msif_alb_id
   port              = var.app_port
   protocol          = "HTTP"
 
   default_action {
-    target_group_arn = aws_alb_target_group.fgms_api_tg.id
+    target_group_arn = aws_alb_target_group.msif_api_tg.id
     type             = "forward"
   }
 }
 
 
-resource "aws_service_discovery_service" "fgms_api_service" {
-  name = var.fgms_api_service_namespace
+resource "aws_service_discovery_service" "msif_api_service" {
+  name = var.msif_api_service_namespace
 
   dns_config {
-    namespace_id = data.terraform_remote_state.dns.outputs.fgms_dns_discovery_id
+    namespace_id = data.terraform_remote_state.dns.outputs.msif_dns_discovery_id
 
     dns_records {
       ttl  = 10

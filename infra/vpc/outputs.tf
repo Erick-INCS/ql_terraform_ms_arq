@@ -1,14 +1,14 @@
-output "fgms_vpc_id" {
-  description = "fgms subnet private 1"
+output "msif_vpc_id" {
+  description = "VPC ID"
   value       = module.vpc.vpc_id
 }
 
-output "fgms_private_subnets_ids" {
-  description = "fgms private subnets ids"
+output "msif_private_subnets_ids" {
+  description = "Private subnets IDs"
   value       = module.vpc.private_subnets
 }
 
-output "fgms_public_subnets_ids" {
-  description = "fgms public subnets ids"
+output "msif_public_subnets_ids" {
+  description = "Public subnets IDs"
   value       = module.vpc.public_subnets
 }
